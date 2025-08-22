@@ -1,6 +1,9 @@
 services:
   ollama:
-    build: .
+    build: 
+      context: .
+      args:
+        OLLAMA_DEFAULT_MODEL: ${OLLAMA_DEFAULT_MODEL:-tinyllama}
     container_name: ollama-service
     ports:
       - "11434:11434"

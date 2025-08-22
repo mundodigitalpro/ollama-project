@@ -79,7 +79,7 @@ class OllamaAPI:
                                 for line in response.iter_lines():
                                     if line:
                                         try:
-                                            status = requests.utils.json.loads(line)
+                                            status = json.loads(line)
                                             if 'status' in status and status['status'] != last_status:
                                                 print(f"Status: {status['status']}")
                                                 last_status = status['status']

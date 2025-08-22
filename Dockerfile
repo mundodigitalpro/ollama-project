@@ -2,10 +2,16 @@ FROM ollama/ollama:latest
 
 EXPOSE 11434
 
+# Argument para el modelo por defecto
+ARG OLLAMA_DEFAULT_MODEL=tinyllama
+
 # Install necessary packages
 RUN apt-get update && \
     apt-get install -y curl procps && \
     rm -rf /var/lib/apt/lists/*
+
+# Set environment variable from build arg
+ENV MODEL_NAME=${OLLAMA_DEFAULT_MODEL:-tinyllama}
 
 # Create a startup script
 COPY <<'EOF' /start.sh
@@ -13,7 +19,9 @@ COPY <<'EOF' /start.sh
 
 MAX_RETRIES=5
 RETRY_DELAY=60
-MODEL_NAME="tinyllama"
+
+# Obtener modelo de la variable de entorno
+MODEL_NAME="${MODEL_NAME:-tinyllama}"
 
 echo "Starting Ollama service..."
 ollama serve &
