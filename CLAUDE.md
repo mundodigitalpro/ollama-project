@@ -10,7 +10,7 @@ This is an Ollama Docker Project that provides a containerized environment for r
 
 ### Windows
 ```batch
-# Start the service (builds containers, starts Ollama, downloads model)
+# Start the service with interactive model selection
 run.bat
 
 # Clean up all containers, images, and volumes
@@ -22,12 +22,22 @@ clean.bat
 # Make scripts executable (first time only)
 chmod +x run.sh clean.sh
 
-# Start the service
+# Start the service with interactive model selection
 ./run.sh
 
 # Clean up environment
 ./clean.sh
 ```
+
+### Interactive Model Selection
+
+When starting the service for the first time or rebuilding containers, users are prompted to select a model:
+
+1. **Pre-configured options (1-7)**: Quick selection of popular models
+2. **Custom model names**: Users can type any model name available in Ollama registry
+3. **Examples of custom models**: `deepseek-r1:1.5b`, `phi3:mini`, `codeqwen:7b`
+
+The selected model is automatically downloaded and configured during container startup.
 
 ## Architecture
 
@@ -36,9 +46,10 @@ The project uses a multi-container Docker architecture:
 1. **Ollama Service (`ollama`)**: 
    - Runs on port 11434
    - Uses `ollama/ollama:latest` base image
-   - Automatically pulls the `tinyllama` model on startup
-   - Includes health checks and retry logic
+   - Automatically downloads the user-selected model on startup
+   - Includes health checks and retry logic with 5 retry attempts
    - Persists data in `ollama_data` volume
+   - Falls back to `tinyllama` if no model is specified
 
 2. **Python Client (`python-client`)**:
    - Interactive chat interface using Python 3.9
@@ -56,10 +67,11 @@ The project uses a multi-container Docker architecture:
   - Error handling and logging
 
 ### Key Features
-- Interactive model selection from available models
-- Automatic model downloading with progress display
-- Robust error handling and retry mechanisms
-- Support for multiple models (llama2, codellama, mistral, tinyllama, orca-mini)
+- **Interactive model selection at startup**: Choose from pre-configured options or specify custom models
+- **Automatic model downloading**: Downloads selected model during container startup with progress display
+- **Robust error handling**: 5-retry mechanism with 60-second delays for model downloads
+- **Support for any Ollama model**: Pre-configured options include tinyllama, llama2, codellama, mistral, orca-mini, qwen2:1.5b, gemma:2b
+- **Custom model support**: Users can specify any model from the Ollama registry (e.g., deepseek-r1:1.5b, phi3:mini)
 
 ### Docker Configuration
 - **Main Dockerfile**: Sets up Ollama service with startup script
@@ -71,17 +83,27 @@ The project uses a multi-container Docker architecture:
 ### Running the Application
 1. Use `run.bat` (Windows) or `./run.sh` (Linux/MacOS) to start
 2. The script will:
-   - Clean previous environment
-   - Build containers from scratch
-   - Start Ollama service
-   - Wait for service readiness
+   - Check for existing Docker resources and offer cleanup/reuse options
+   - **Prompt for model selection** (when building fresh containers)
+   - Build containers with the selected model as build argument
+   - Start Ollama service with automatic model download
+   - Wait for service readiness with health checks
    - Launch interactive Python client
 
+### Model Selection Process
+When running fresh builds, the system presents:
+- **Menu of 7 pre-configured models** with descriptions
+- **Option to enter custom model names** for any Ollama registry model
+- **Validation and confirmation** of the selected model
+- **Automatic environment variable passing** to Docker containers
+
 ### Model Management
-- Default model: `tinyllama` (downloaded automatically)
-- Available models: llama2, codellama, mistral, orca-mini
-- Models can be selected interactively or downloaded on-demand
-- Type "cambiar modelo" in chat to switch models
+- **Startup selection**: Interactive model selection during container build
+- **Pre-configured models**: 7 popular models with quick selection (1-7)
+- **Custom models**: Support for any model in Ollama registry
+- **Fallback model**: `tinyllama` used if no model specified
+- **Runtime switching**: Type "cambiar modelo" in chat to switch models
+- **Persistent storage**: Downloaded models stored in `ollama_data` volume
 
 ### Cleanup
 - Use `clean.bat`/`clean.sh` to remove all containers, images, and volumes
@@ -115,11 +137,18 @@ The project uses a multi-container Docker architecture:
 
 ## Troubleshooting
 
-### Common Issues
+### Model Selection Issues
+- **Error: "accepts 1 arg(s), received 0"**: Fixed in current version - run clean.bat/clean.sh and rebuild
+- **Custom model not working**: Ensure exact model name from Ollama registry (e.g., `deepseek-r1:1.5b`)
+- **Model selection ignored**: Choose "Clean and rebuild" option when prompted about existing resources
+
+### Common Issues  
 - Ensure Docker Desktop is running before starting
 - First run may take several minutes while downloading models
+- Large models (like llama2) require significant RAM and download time
 - If connection fails, verify port 11434 is available
 - Use logs: `docker-compose logs -f ollama`
+- For custom models, verify availability at https://ollama.com/library
 
 ### Development Notes
 - The project is primarily in Spanish (interface text, documentation)
