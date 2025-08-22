@@ -1,0 +1,45 @@
+services:
+  ollama:
+    build: .
+    container_name: ollama-service
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+          cpus: '4'
+        reservations:
+          memory: 4G
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    networks:
+      - ollama-network
+
+  python-client:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    network_mode: "host"
+    environment:
+      - PYTHONUNBUFFERED=1
+    stdin_open: true
+    tty: true
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+networks:
+  ollama-network:
+    driver: bridge
+
+volumes:
+  ollama_data:
+    name: ollama_data
